@@ -1,15 +1,17 @@
-GitHub repository: DrMaGr/zactests
+ZAC TESTS — MATCHING VERSION PAGE LAYOUTS
 
-UPLOAD THESE FIVE FILES TO THE REPOSITORY ROOT:
-- index.html : REPLACE existing homepage with version selector
-- exam-01.html : ADD closed-book baseline page for all four subjects
-- exam-02.html : ADD Maths .02 open-book page, with reading.html link for other subjects
-- exam-03.html : ADD Maths .03 closed-book page
-- maths-versions.js : ADD if missing (maths.02 and maths.03 question banks)
+Upload ONLY these files into the root of https://github.com/DrMaGr/zactests :
+  exam-02.html  — REPLACE existing
+  exam-03.html  — REPLACE existing
 
-KEEP existing exams.js, maths-bank.js, reading.html, reading-bank.js, practice.html, practice-bank.js and resources.html.
+Keep index.html, exam-01.html, exams.js, maths-bank.js, maths-versions.js, reading.html, reading-bank.js, practice.html, practice-bank.js and resources.html unchanged.
 
-All four HTML pages load the same original assessment localStorage key (year8-knowledge-tracker-v1).
-Back up existing results as JSON first. GitHub Pages must finish deploying before checking.
+The .02 page now uses the same four-card layout as .01:
+- French .02 (15 questions, opens existing reading.html)
+- Humanities .02 (5 questions, opens existing reading.html)
+- Maths .02 (32 questions, runs on this page)
+- Science .02 (20 questions, opens existing reading.html)
 
-The .02 reading results currently use independent reading-test storage, unlike the Maths .02 formal results.
+The .03 page uses the same four-card layout, with Maths .03 active and three clearly labelled coming-later cards. No unavailable test is incorrectly shown as available.
+
+Do not change existing localStorage keys or delete site data. Export existing results before any site update.
