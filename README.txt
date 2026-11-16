@@ -1,0 +1,1 @@
+Upload index.html (replace) and maths-versions.js (add) to the root of DrMaGr/zactests. Keep exams.js, maths-bank.js, reading/practice resources unchanged. Export student results first. maths.02 is open-book; maths.03 is closed-book. Both appear on the homepage automatically. Prior results remain stored under the existing localStorage key.
