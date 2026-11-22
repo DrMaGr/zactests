@@ -1,4 +1,1 @@
-Upload these three files to the ROOT of your GitHub repository DrMaGr/zactests.
-Replace exam-01.html; add english-01.html and english-01-bank.js if absent.
-English appears INSIDE Version .01 Baseline Assessment and will show Not completed until a result exists.
-No other versions or existing browser results are changed.
+Replace only exam-01.html at the root of DrMaGr/zactests. English .01 now uses the same pending card styling as the other baseline subjects. No question banks, results or other pages are changed.
