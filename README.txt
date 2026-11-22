@@ -1,14 +1,17 @@
-Zac Knowledge Tracker — Version .05 focused assessment
+Zac Knowledge Tracker — .06 Final Exam Simulation
 
-Upload these THREE files to the root of GitHub repository DrMaGr/zactests:
-- index.html (replace existing; adds .05 link)
-- exam-05.html (new)
-- exam-05-bank.js (new)
+Upload these three files to the ROOT of the DrMaGr/zactests GitHub repository:
+1. Replace index.html (adds the .06 homepage card and preserves .01–.05 and English links)
+2. Add exam-06.html
+3. Add exam-06-bank.js
 
-Do not remove or overwrite the .01 through .04 pages or banks. The quiz uses the same year8-knowledge-tracker-v1 localStorage results and JSON export as earlier formal assessments, with version identifiers like maths.05.
+Do not delete any existing test files.
 
-Original questions; modelled on the Victorian Curriculum Level 8 and year-8 school assessment formats, not copied from exams.
-Sources for format/level: https://victoriancurriculum.vcaa.vic.edu.au/mathematics/mathematics-version-2-0/curriculum/f-10?layout=2
-https://www.caseygrammar.vic.edu.au/sites/default/files/2025-08/2026%20Year%208%20Curriculum%20Handbook.pdf
+Open https://drmagr.github.io/zactests/exam-06.html after GitHub Pages updates.
 
-Interactions: drag blocks into the answer line, drag to reorder, click blocks to add/remove (keyboard and touch fallback), leave unused blocks as distractors; once locked, answer cannot change. Progress only on submission. Browser storage and export maintained.
+Exams: 30 questions each in Science, French, Humanities and English / The Giver.
+40-minute advisory timer; no feedback until final submission.
+Results are saved to the existing localStorage key year8-knowledge-tracker-v1 and can be exported as JSON.
+Question bank uses newly authored content.
+
+No source images needed: circuit illustrations are embedded as SVG.
