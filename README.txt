@@ -1,1 +1,3 @@
-English .01 belongs under Version .01. Upload these four files to the root of DrMaGr/zactests, replacing index.html and exam-01.html and adding english-01.html and english-01-bank.js. No folders need to be created in GitHub Pages. The Version .01 page shows English alongside Science, Humanities, French and Maths. Version .06 remains available. Existing browser results are retained.
+English .01 inside Version .01 baseline assessment
+
+Upload these three files to the root of DrMaGr/zactests, replacing exam-01.html and adding english-01.html and english-01-bank.js if missing. Open exam-01.html, then select English. The English test opens embedded within Version .01 rather than navigating to a different page. Results still use the same browser localStorage key and JSON export. No changes to index.html or other versions.
