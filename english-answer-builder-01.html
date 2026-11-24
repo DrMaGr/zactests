@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Answer Builder — Module 1 | Zac's Knowledge Tracker</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#172a43;background:#f3f6fb}*{box-sizing:border-box}
+body{margin:0}main{max-width:1100px;margin:0 auto;padding:26px 18px 80px}a{color:#255fa6}header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.eyebrow{color:#286cba;text-transform:uppercase;letter-spacing:.12em;font-size:12px;font-weight:800}
+h1{font-size:clamp(28px,4vw,39px);margin:7px 0 9px}h2{font-size:22px;margin:2px 0 12px}h3{margin:0 0 8px;font-size:16px}p{line-height:1.57;color:#53637b}
+.card{background:#fff;border:1px solid #dce5f2;border-radius:17px;padding:23px;box-shadow:0 3px 14px rgba(31,54,87,.04);margin:16px 0}
+.hero{background:linear-gradient(120deg,#f1f7ff,#fff);border:1px solid #d1e0f3}
+.chip{display:inline-block;background:#e8f0fc;color:#255884;font-weight:750;border-radius:100px;padding:5px 10px;font-size:12px}
+.btn{background:#2563ad;color:white;border:1px solid #2563ad;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:730;cursor:pointer;min-height:43px}
+.btn:hover:not(:disabled){background:#164e93}.btn.secondary{background:#fff;color:#255b9c;border-color:#b9cde5}.btn.tertiary{color:#2e4b70;background:#f6f8fc;border-color:#dce5f1}.btn:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid #f1ac42;outline-offset:2px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.between{justify-content:space-between}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.colhead{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:12px}
+.small{font-size:12px;color:#5b6b80}.textInput{padding:11px 13px;border:1px solid #b6cbe4;border-radius:9px;font-size:16px;max-width:400px;width:100%}
+.muted{color:#5b6b80}.bank,.answer-zone{min-height:255px;border:2px dashed #cfdaea;background:#f8fbff;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.bank{border-style:solid}.answer-zone.dragover,.bank.dragover,.block.dragover{background:#e8f2ff;border-color:#377ad2}
+.block{border:1px solid #cddbed;background:#fff;border-radius:11px;padding:12px 13px;line-height:1.5;text-align:left;cursor:grab;color:#172e4c;font-size:14px}
+.block:hover{border-color:#6197cf}.block:active{cursor:grabbing}.block .role{display:inline-flex;font-size:11px;font-weight:800;color:#245c9c;background:#eaf1fc;border-radius:7px;padding:3px 6px;margin-right:5px}
+.selected{display:flex;align-items:start;gap:8px;background:white;border:1px solid #b8cce4;border-radius:11px;padding:11px}
+.selected[draggable="true"]{cursor:grab}.selected .content{flex:1;min-width:0;font-size:14px;line-height:1.53}.num{flex:0 0 25px;width:25px;height:25px;display:grid;place-items:center;border-radius:100%;font-size:12px;font-weight:800;background:#e7effb;color:#215d9f}
+.controls{display:flex;gap:4px;align-self:start}.mini{border:1px solid #cddbed;background:#fff;border-radius:7px;cursor:pointer;padding:6px 8px;min-height:30px;font-size:13px;color:#23486e}.mini:disabled{opacity:.3;cursor:not-allowed}
+.empty{margin:auto;text-align:center;color:#617490;max-width:280px;font-size:14px;line-height:1.6}.progress{height:9px;background:#e8eef7;border-radius:12px;overflow:hidden;flex:1;min-width:100px}.bar{background:#246fb7;height:100%;width:0;transition:width .2s}
+.notice{border-left:4px solid #3877bc;background:#f0f6ff;padding:13px 16px;border-radius:7px;color:#294563;font-size:14px;line-height:1.55}
+.feedback{margin-top:18px;background:#f7fafc;border:1px solid #c9d9e9;border-radius:12px;padding:17px}.feedback.good{background:#f2fbf5;border-color:#b4dfc4}.feedback.bad{background:#fff8f2;border-color:#e3cdb6}
+.solutionItem{padding:9px 10px;background:white;border:1px solid #dfe7f2;border-radius:9px;margin:7px 0;line-height:1.48;font-size:14px}.solutionItem strong{color:#225c9c}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{border:1px solid #dbe5f2;border-radius:12px;padding:16px;background:#fff}.stat strong{font-size:26px;display:block}
+[hidden]{display:none!important}@media(max-width:720px){.columns{grid-template-columns:1fr}.bank,.answer-zone{min-height:200px}.card{padding:17px}.stats{grid-template-columns:1fr 1fr}.selected .controls{flex-wrap:wrap;max-width:80px}}
+
+
+/* PEEL revision and mini-check stages */
+.peel-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
+.peel-step{background:#f7faff;border:1px solid #dce6f5;border-radius:12px;padding:13px;line-height:1.48}
+.peel-letter{display:inline-grid;place-items:center;background:#2d69af;color:#fff;font-weight:800;border-radius:9px;width:33px;height:33px;margin-bottom:8px}
+.peel-step strong{display:block;color:#1b375b}
+.peel-step p{font-size:13px;margin:6px 0 0}
+.worked{border:1px solid #dce6f3;border-radius:13px;overflow:hidden;margin:16px 0}
+.worked-line{display:grid;grid-template-columns:126px 1fr;gap:14px;align-items:start;padding:13px;border-bottom:1px solid #e6edf5;font-size:15px;line-height:1.55}
+.worked-line:last-child{border-bottom:0}.worked-line:nth-child(odd){background:#f7faff}
+.worked-line b{color:#215c9f}
+.lesson-callout{background:#fff9ef;border-left:4px solid #d39a41;padding:13px 15px;border-radius:7px;line-height:1.55}
+.quiz-choice{display:block;width:100%;background:#fff;border:1px solid #cbd9ec;border-radius:10px;padding:13px 15px;text-align:left;font:inherit;color:#173355;cursor:pointer;margin:8px 0;line-height:1.5}
+.quiz-choice.active{background:#eaf3ff;border:2px solid #3478c0;padding:12px 14px}
+.quiz-choice:disabled{opacity:.95;cursor:default}.quiz-choice:focus-visible{outline:3px solid #e9a745;outline-offset:2px}
+.quiz-result{margin-top:14px;padding:15px;border:1px solid #c5d8ed;background:#f3f8ff;border-radius:11px;line-height:1.55}
+.quiz-result.good{border-color:#b5dfc5;background:#effaf2}.quiz-result.bad{border-color:#efcfab;background:#fff8ef}
+@media(max-width:760px){.peel-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.worked-line{grid-template-columns:1fr;gap:4px}}
+</style></head>
+<body><main>
+<header><div><div class="eyebrow">Year 8 Knowledge Tracker · English</div><h1>Exam Answer Builder <span class="chip">Module 1 pilot</span></h1><p style="margin:5px 0">The Giver · Building a PEEL analytical paragraph</p></div><a href="index.html">← Back to Knowledge Tracker</a></header>
+<section id="landing">
+<div class="card hero"><h2>First learn PEEL, then build a paragraph</h2><p>After a worked example and four ungraded checks, arrange four original sentence blocks into a logical analytical paragraph: <strong>Point → Evidence → Explanation → Link</strong>. This practice targets the exam-writing skills identified in English .01.</p><div class="row" style="gap:7px"><span class="chip">8 short exercises</span><span class="chip">Drag and drop</span><span class="chip">Click-to-order alternative</span><span class="chip">Feedback after submission</span></div></div>
+<div class="card"><h2>Begin with PEEL revision</h2><label for="studentName" style="display:block;font-weight:700;margin-bottom:9px">Student name</label><input class="textInput" id="studentName" placeholder="Student name" autocomplete="name" maxlength="80"><p class="small">First, learn PEEL with a model answer and four ungraded questions. Then begin the eight paragraph-building exercises. Your exercise results stay separate from English .01.</p><div class="row"><button class="btn" id="startBtn">Review PEEL first</button><button class="btn secondary" id="resumeBtn" hidden>Resume unfinished practice</button></div></div>
+<div class="card" id="previousPanel" hidden><h2>Previous attempt</h2><p id="previousSummary"></p><button class="btn secondary" id="exportPrevious">Download result (JSON)</button></div>
+</section>
+
+<section id="peelIntro" hidden>
+  <div class="card hero">
+    <div class="row between"><span class="chip">Step 1 of 2 · Learn</span><span class="small">Before the eight exercises</span></div>
+    <h2 style="margin-top:14px">What is PEEL?</h2>
+    <p>PEEL is a way to make <strong>one clear argument in a paragraph</strong>. It stops an exam answer becoming a list of facts or a retelling of the story.</p>
+    <div class="peel-steps">
+      <div class="peel-step"><span class="peel-letter">P</span><strong>Point</strong><p>Answer the question with one clear idea. What are you arguing?</p></div>
+      <div class="peel-step"><span class="peel-letter">E</span><strong>Evidence</strong><p>Give a specific event, action or detail from the novel that supports the point.</p></div>
+      <div class="peel-step"><span class="peel-letter">E</span><strong>Explanation</strong><p>Explain <em>how</em> that evidence proves the point, and what it suggests.</p></div>
+      <div class="peel-step"><span class="peel-letter">L</span><strong>Link</strong><p>Return to the question or connect your idea to the novel's wider message.</p></div>
+    </div>
+    <div class="notice"><strong>Remember:</strong> Evidence tells the examiner <em>what happens</em>. Explanation tells them <em>why it matters</em>. Both are essential.</div>
+  </div>
+  <div class="card">
+    <h2>Worked example from <em>The Giver</em></h2>
+    <p><strong>Question:</strong> How does Lowry show that Jonas's community limits people's freedom?</p>
+    <div class="worked">
+      <div class="worked-line"><b>POINT</b><span>Lowry suggests that the community limits freedom by controlling major decisions in people's lives.</span></div>
+      <div class="worked-line"><b>EVIDENCE</b><span>For example, at the Ceremony of Twelve, the Elders choose each child's future job.</span></div>
+      <div class="worked-line"><b>EXPLANATION</b><span>Because the children cannot choose their own paths, their personal ambitions matter less than the community's need for order.</span></div>
+      <div class="worked-line"><b>LINK</b><span>Lowry therefore encourages readers to question whether a perfectly organised society is worth sacrificing individual choice.</span></div>
+    </div>
+    <div class="lesson-callout"><strong>Why is this stronger than retelling?</strong> "The Elders assign jobs" only states a fact. "This removes the children's ability to choose their futures" explains how the fact supports an argument about freedom.</div>
+    <p class="small">The example uses a paraphrase of a novel event, not a direct quotation. In school, follow your teacher's instructions about quotations and references.</p>
+    <div class="row" style="margin-top:18px"><button class="btn" id="goWarmup">Try four quick PEEL checks</button><button class="btn secondary" id="introBack">Back</button></div>
+  </div>
+</section>
+<section id="peelWarmup" hidden>
+  <div class="card" id="warmupQuestionCard">
+    <div class="row between"><span class="chip" id="warmupStep">Check 1 of 4</span><span class="small">Practice only · Not graded</span></div>
+    <h2 style="margin-top:17px">Check your understanding</h2>
+    <p id="warmupPrompt" style="font-weight:650;color:#223a5b;font-size:17px"></p>
+    <div id="warmupOptions" role="group" aria-label="Answer options"></div>
+    <div id="warmupFeedback" class="quiz-result" hidden aria-live="polite"></div>
+    <div class="row" style="margin-top:16px"><button class="btn" id="warmupCheck" disabled>Check answer</button><button class="btn" id="warmupNext" hidden>Next check</button><button class="btn secondary" id="warmupReview">Review PEEL again</button></div>
+  </div>
+  <div class="card hero" id="warmupFinish" hidden>
+    <span class="chip">Ready for Module 1</span>
+    <h2 style="margin-top:15px">Now build your own paragraphs</h2>
+    <p id="warmupScore"></p>
+    <p>The eight exercises will ask you to put complete sentences in PEEL order. You can request hints if needed. This mini-check does not affect the eight-exercise score.</p>
+    <div class="row"><button class="btn" id="beginExercises">Begin the 8 exercises</button><button class="btn secondary" id="warmupRestart">Repeat PEEL checks</button><button class="btn tertiary" id="warmupToIntro">Read the example again</button></div>
+  </div>
+</section>
+
+<section id="exercise" hidden>
+<div class="card"><div class="row between"><span class="chip" id="step">Exercise 1 of 8</span><span id="answered" class="small">0/8 checked</span></div><div class="row" style="margin-top:12px"><div class="progress"><div class="bar" id="bar"></div></div></div><h2 style="margin-top:20px" id="topic"></h2><p class="small" style="margin:0">Exam question</p><p style="font-size:18px;color:#223b5c;font-weight:650;margin:8px 0 14px" id="question"></p><div class="notice"><strong>Your task:</strong> Arrange the four sentences so the paragraph makes a convincing argument. Drag blocks or click them in order. Use ↑ and ↓ to rearrange. Submit when satisfied.</div></div>
+<div class="card"><div class="row between"><h2>Your paragraph</h2><button class="btn tertiary" id="hintBtn">Reveal PEEL labels (hint)</button></div><div class="columns">
+<div><div class="colhead"><h3>Available sentence blocks</h3><span class="small" id="leftCount">4 left</span></div><div id="bank" class="bank" aria-label="Available sentence blocks"></div></div>
+<div><div class="colhead"><h3>Arrange your answer</h3><button class="btn tertiary" id="clearBtn">Clear</button></div><div id="answerZone" class="answer-zone" aria-label="Your paragraph, in order"></div></div></div>
+<div class="row between" style="margin-top:18px"><span class="small" id="hintNotice">An optional hint reveals each sentence's role.</span><button class="btn" id="submitBtn" disabled>Check paragraph</button></div>
+<div class="feedback" id="feedback" hidden aria-live="polite"><h3 id="feedbackTitle"></h3><p id="feedbackMessage"></p><div id="solution"></div><p id="lesson"></p><button class="btn" id="nextBtn">Next exercise</button></div></div>
+</section>
+<section id="summary" hidden><div class="card hero"><span class="chip">Module 1 complete</span><h2 style="margin-top:12px">Your paragraph-building results</h2><div class="stats"><div class="stat"><span class="small">Correct sequences</span><strong id="summaryCorrect">—</strong></div><div class="stat"><span class="small">Hints used</span><strong id="summaryHints">—</strong></div><div class="stat"><span class="small">Questions completed</span><strong id="summaryDone">—</strong></div></div><p id="summaryAdvice"></p></div><div class="card"><h2>Review</h2><div id="summaryRows"></div><div class="row" style="margin-top:16px"><button class="btn" id="downloadBtn">Download result (JSON)</button><button class="btn secondary" id="restartBtn">Try again with the same questions</button><a class="btn secondary" href="index.html" style="text-decoration:none">Return to site</a></div></div></section>
+<footer class="small" style="text-align:center;margin-top:18px">Original practice prompts based on The Giver by Lois Lowry. This module trains paragraph organisation, not the full quality of independent written analysis. Results are not school grades.</footer>
+</main>
+<script type="application/json" id="exerciseBank">[{"id": "peel01", "title": "Freedom and choice", "question": "How does Lowry show that the community restricts individual freedom?", "blocks": {"P": "Lowry presents the community's control over careers as a restriction on individual freedom.", "E": "At the Ceremony of Twelve, the Elders assign each child a future role rather than allowing them to choose.", "X": "This shows that even a person's life's work is determined by authorities, limiting independence.", "L": "Through the Assignment system, Lowry asks readers to question whether order is worth the loss of choice."}, "order": ["X", "L", "E", "P"], "lesson": "The evidence is a specific event; the explanation tells the examiner why that event proves the point."}, {"id": "peel02", "title": "Memory and emotion", "question": "How do Jonas's memories reveal what the community has lost?", "blocks": {"P": "Through Jonas's memories, Lowry reveals what the community has sacrificed for security.", "E": "When Jonas experiences snow and sunshine, he discovers sensations unknown to most other citizens.", "X": "These experiences reveal that removing suffering has also removed wonder, variety and personal experience.", "L": "Lowry suggests that protecting people from discomfort may also deprive them of a meaningful life."}, "order": ["E", "X", "P", "L"], "lesson": "An explanation develops an inference from evidence; it does more than retell the event."}, {"id": "peel03", "title": "Knowledge and truth", "question": "How does Jonas's discovery about release change his view of the community?", "blocks": {"P": "Jonas's changing beliefs show how knowledge can expose injustice.", "E": "After discovering what release really involves, Jonas can no longer trust the community's reassuring description of the practice.", "X": "The discovery forces him to compare the community's words with its actions and question its moral authority.", "L": "Lowry portrays independent thinking as the first step towards recognising and challenging wrongdoing."}, "order": ["L", "P", "X", "E"], "lesson": "Keep your point focused on the question: this asks what changes in Jonas, not just what release means."}, {"id": "peel04", "title": "Language and euphemism", "question": "How does the word 'release' contribute to Lowry's criticism of the community?", "blocks": {"P": "Lowry uses the word 'release' to demonstrate how language can conceal cruelty.", "E": "Community members refer to release as an ordinary procedure, but Jonas later witnesses what it actually involves.", "X": "The contrast between the gentle term and the harmful act shows how misleading language can suppress moral questioning.", "L": "Lowry warns that euphemisms can make unethical decisions appear acceptable."}, "order": ["E", "L", "P", "X"], "lesson": "Naming a language technique is useful only if the explanation says how it shapes a reader's understanding."}, {"id": "peel05", "title": "Jonas and Gabriel", "question": "How does Jonas's relationship with Gabriel affect his decisions?", "blocks": {"P": "Jonas's growing care for Gabriel transforms his doubts about the community into action.", "E": "When Gabriel faces release, Jonas decides to leave the community and take him along.", "X": "This decision shows Jonas placing another person's wellbeing above obedience to the community's rules.", "L": "Lowry presents love and responsibility as forces that can inspire moral courage."}, "order": ["X", "P", "E", "L"], "lesson": "The explanation should state what Jonas's choice reveals about his values, not just repeat that he left."}, {"id": "peel06", "title": "Sameness and identity", "question": "How does Lowry suggest that Sameness affects individuality?", "blocks": {"P": "Lowry presents Sameness as a system that reduces conflict by suppressing individuality.", "E": "The community limits colour and carefully controls everyday routines and choices.", "X": "Without opportunities to experience differences or make meaningful choices, citizens have fewer ways to develop personal identities.", "L": "Lowry encourages readers to question a society that values uniformity above individual expression."}, "order": ["P", "L", "X", "E"], "lesson": "Your link should return to the novel's broader idea, not introduce unrelated evidence."}, {"id": "peel07", "title": "The Giver's burden", "question": "What does the Giver's isolation reveal about the community?", "blocks": {"P": "The Giver's isolation reveals the emotional cost of forcing one person to carry the community's memories.", "E": "He holds both joyful and painful memories that most citizens never experience or discuss.", "X": "By separating difficult knowledge from ordinary life, the community avoids confronting suffering or learning from it.", "L": "Lowry implies that genuine wisdom requires people to acknowledge and share difficult truths."}, "order": ["L", "E", "P", "X"], "lesson": "Evidence names a specific aspect of the story. Analysis explains how that detail supports the argument."}, {"id": "peel08", "title": "Courage and sacrifice", "question": "How does Jonas demonstrate courage towards the end of the novel?", "blocks": {"P": "Lowry presents courage as acting according to one's values despite uncertainty.", "E": "Jonas leaves his familiar community while trying to protect Gabriel from release.", "X": "Although he cannot guarantee their safety, Jonas chooses a dangerous journey because remaining would put Gabriel at risk.", "L": "Through this decision, Lowry suggests that ethical responsibility sometimes demands personal sacrifice."}, "order": ["X", "E", "L", "P"], "lesson": "A strong point answers 'how' directly; evidence and explanation then demonstrate it."}]</script>
+<script>
+'use strict';
+const BANK=JSON.parse(document.getElementById('exerciseBank').textContent);
+const KEY='year8-english-answer-builder-01-v1';
+const ACTIVE_KEY='year8-english-answer-builder-01-active-v1';
+const roles={P:'Point',E:'Evidence',X:'Explanation',L:'Link'};
+const target=['P','E','X','L'];
+const $=id=>document.getElementById(id);
+function safeGet(key,fallback){try{const v=JSON.parse(localStorage.getItem(key));return v===null?fallback:v}catch{return fallback}}
+function safeSet(key,val){try{localStorage.setItem(key,JSON.stringify(val));return true}catch{return false}}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function show(id){for(const n of ['landing','peelIntro','peelWarmup','exercise','summary'])$(n).hidden=n!==id;window.scrollTo(0,0)}
+let state=null,mostRecent=null;
+
+const WARMUPS=[
+  {question:'Which sentence is the EVIDENCE for a paragraph about the loss of freedom?',options:[
+    'Lowry suggests that the community limits individual choice.',
+    'At the Ceremony of Twelve, the Elders assign the children their future occupations.',
+    'This prevents children from choosing a path that reflects their own ambitions.'
+  ],answer:1,explain:'Evidence is the specific example from the novel. The first sentence is a Point, and the third is an Explanation.'},
+  {question:'A student writes: “The Elders assign jobs.” What should the EXPLANATION do next?',options:[
+    'Repeat that the Elders assign jobs.',
+    'Introduce a completely different event from the novel.',
+    'Explain how assigning jobs prevents people from choosing their own futures.'
+  ],answer:2,explain:'Explanation makes the connection between the evidence and your argument. It answers: Why does this event prove my point?'},
+  {question:'For the question “How does Lowry explore control?”, which is the strongest POINT?',options:[
+    'The book is called The Giver and follows Jonas.',
+    'Lowry presents strict rules as a way the community controls individual behaviour.',
+    'Jonas has a friend named Asher.'
+  ],answer:1,explain:'A strong Point answers the exam question with an arguable idea. The other statements are facts but do not make an argument about control.'},
+  {question:'Which sentence makes the strongest LINK at the end of a paragraph about the community controlling choice?',options:[
+    'In conclusion, I have written four sentences.',
+    'The Ceremony of Twelve occurs in the novel.',
+    'Lowry ultimately questions whether order can justify taking away personal freedom.'
+  ],answer:2,explain:'A Link returns to the central question or connects the paragraph to the author’s larger message. It is not just another plot fact.'}
+];
+let warmupIndex=0,warmupSelection=-1,warmupChecked=false,warmupCorrect=0;
+function beginWarmup(){warmupIndex=0;warmupSelection=-1;warmupChecked=false;warmupCorrect=0;renderWarmup()}
+function renderWarmup(){show('peelWarmup');$('warmupQuestionCard').hidden=false;$('warmupFinish').hidden=true;const q=WARMUPS[warmupIndex];$('warmupStep').textContent='Check '+(warmupIndex+1)+' of '+WARMUPS.length;$('warmupPrompt').textContent=q.question;
+  $('warmupOptions').innerHTML='';q.options.forEach((option,i)=>{const b=document.createElement('button');b.type='button';b.className='quiz-choice'+(warmupSelection===i?' active':'');b.textContent=String.fromCharCode(65+i)+'. '+option;b.disabled=warmupChecked;b.setAttribute('aria-pressed',String(warmupSelection===i));b.addEventListener('click',()=>{if(warmupChecked)return;warmupSelection=i;renderWarmup()});$('warmupOptions').appendChild(b)});
+  $('warmupCheck').hidden=warmupChecked;$('warmupCheck').disabled=warmupSelection<0;$('warmupNext').hidden=!warmupChecked;$('warmupNext').textContent=warmupIndex===WARMUPS.length-1?'Finish revision':'Next check';$('warmupFeedback').hidden=!warmupChecked;
+  if(warmupChecked){const right=warmupSelection===q.answer;$('warmupFeedback').className='quiz-result '+(right?'good':'bad');$('warmupFeedback').textContent=(right?'Correct. ':'Not quite. The best answer is '+String.fromCharCode(65+q.answer)+'. ')+q.explain;}
+}
+function checkWarmup(){if(warmupChecked||warmupSelection<0)return;warmupChecked=true;if(warmupSelection===WARMUPS[warmupIndex].answer)warmupCorrect++;renderWarmup()}
+function nextWarmup(){if(!warmupChecked)return;if(warmupIndex===WARMUPS.length-1){show('peelWarmup');$('warmupQuestionCard').hidden=true;$('warmupFinish').hidden=false;$('warmupScore').textContent='You identified '+warmupCorrect+' of '+WARMUPS.length+' PEEL concepts correctly on the first try. This is ungraded practice.';return}warmupIndex++;warmupSelection=-1;warmupChecked=false;renderWarmup()}
+function enterPrimer(){if(!$('studentName').value.trim()){$('studentName').setCustomValidity('Enter a student name before you start');$('studentName').reportValidity();$('studentName').focus();return}$('studentName').setCustomValidity('');show('peelIntro')}
+function beginExercises(){const active=safeGet(ACTIVE_KEY,null);if(active&&!confirm('Starting a new attempt will replace your unfinished practice. Continue?'))return;start()}
+
+function history(){const h=safeGet(KEY,[]);return Array.isArray(h)?h:[]}
+function persist(){if(state)safeSet(ACTIVE_KEY,state)}
+function current(){return BANK[state.index]}
+function resultAt(){return state.results[state.index]}
+function correctOrder(a){return JSON.stringify(a)===JSON.stringify(target)}
+function start(){const student=$('studentName').value.trim();if(!student){$('studentName').focus();$('studentName').setCustomValidity('Enter a student name');$('studentName').reportValidity();return} $('studentName').setCustomValidity('');state={id:Date.now()+'-'+Math.floor(Math.random()*1000000),student,started:new Date().toISOString(),index:0,results:[],draft:[],hintUsed:{}};persist();render()}
+function resume(){const v=safeGet(ACTIVE_KEY,null);if(!v||!Array.isArray(v.results)||!Number.isInteger(v.index))return;state=v;render()}
+function isLocked(){return !!resultAt()}
+function hint(){if(isLocked())return;state.hintUsed[current().id]=true;persist();render()}
+function add(id,at){if(isLocked()||state.draft.includes(id))return;if(!target.includes(id))return;state.draft.splice(at===undefined?state.draft.length:at,0,id);persist();render()}
+function removeAt(i){if(isLocked())return;state.draft.splice(i,1);persist();render()}
+function moveAt(i,j){if(isLocked()||j<0||j>=state.draft.length)return;const a=state.draft.splice(i,1)[0];state.draft.splice(j,0,a);persist();render()}
+function clear(){if(isLocked())return;state.draft=[];persist();render()}
+function submit(){if(isLocked()||state.draft.length!==4)return;const q=current();state.results[state.index]={id:q.id,topic:q.title,question:q.question,order:[...state.draft],correct:correctOrder(state.draft),hintUsed:!!state.hintUsed[q.id],submitted:new Date().toISOString()};persist();render()}
+function next(){if(!isLocked())return;if(state.index===BANK.length-1){finish();return}state.index++;state.draft=[];persist();render()}
+function finish(){if(!state)return;const rec={schema:'english-answer-builder-module-01-v1',id:state.id,student:state.student,version:'english.answer-builder.01',mode:'guided-practice',started:state.started,completed:new Date().toISOString(),total:BANK.length,correct:state.results.filter(x=>x&&x.correct).length,hints:state.results.filter(x=>x&&x.hintUsed).length,results:state.results};const h=history();h.push(rec);safeSet(KEY,h);try{localStorage.removeItem(ACTIVE_KEY)}catch(e){}mostRecent=rec;state=null;showSummary(rec)}
+function handleDragStart(e,source,id){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({source,id}))}
+function handleDrop(e,insertIndex){e.preventDefault();e.currentTarget.classList.remove('dragover');if(isLocked())return;let data;try{data=JSON.parse(e.dataTransfer.getData('text/plain'))}catch{return}if(!data||!target.includes(data.id))return;const old=state.draft.indexOf(data.id);let idx=insertIndex;if(old>=0){state.draft.splice(old,1);if(old<idx)idx--}state.draft.splice(Math.max(0,Math.min(idx,state.draft.length)),0,data.id);persist();render()}
+function wireDrop(el,idx){el.addEventListener('dragover',e=>{if(isLocked())return;e.preventDefault();e.stopPropagation();el.classList.add('dragover')});el.addEventListener('dragleave',()=>el.classList.remove('dragover'));el.addEventListener('drop',e=>{e.stopPropagation();handleDrop(e,idx)})}
+function render(){if(!state)return;show('exercise');const q=current(),locked=isLocked(),hintOn=!!state.hintUsed[q.id]||locked;
+$('step').textContent='Exercise '+(state.index+1)+' of '+BANK.length;
+$('answered').textContent=state.results.filter(Boolean).length+'/'+BANK.length+' checked';
+$('bar').style.width=(100*state.results.filter(Boolean).length/BANK.length)+'%';
+$('topic').textContent=q.title;$('question').textContent=q.question;
+$('hintBtn').disabled=locked||hintOn;$('hintBtn').textContent=hintOn?'PEEL labels revealed':'Reveal PEEL labels (hint)';
+$('hintNotice').textContent=hintOn?'PEEL role labels are visible. The hint is recorded.':'Hint reveals each block’s PEEL role if needed.';
+$('bank').innerHTML='';$('answerZone').innerHTML='';
+for(const id of q.order){if(state.draft.includes(id))continue;const b=document.createElement('button');b.type='button';b.className='block';b.draggable=!locked;b.disabled=locked;b.innerHTML=(hintOn?'<span class="role">'+roles[id]+'</span>':'')+escapeHtml(q.blocks[id]);b.addEventListener('click',()=>add(id));b.addEventListener('dragstart',e=>handleDragStart(e,'bank',id));$('bank').appendChild(b)}
+$('leftCount').textContent=(4-state.draft.length)+' left';
+if(state.draft.length===4){const p=document.createElement('p');p.className='small';p.textContent='All blocks placed. You can rearrange them before submitting.';$('bank').appendChild(p)}
+if(!state.draft.length){const p=document.createElement('div');p.className='empty';p.textContent='Drag a sentence here, or click the blocks on the left. Each sentence can be moved later.';$('answerZone').appendChild(p)}
+state.draft.forEach((id,i)=>{const el=document.createElement('div');el.className='selected';el.draggable=!locked;el.innerHTML='<span class="num">'+(i+1)+'</span><div class="content">'+(hintOn?'<span class="role">'+roles[id]+'</span> ':'')+escapeHtml(q.blocks[id])+'</div>';
+if(!locked){const c=document.createElement('div');c.className='controls';for(const [symbol,title,next] of [['↑','Move up',i-1],['↓','Move down',i+1]]){const b=document.createElement('button');b.className='mini';b.type='button';b.textContent=symbol;b.title=title;b.setAttribute('aria-label',title);b.disabled=next<0||next>=state.draft.length;b.addEventListener('click',()=>moveAt(i,next));c.appendChild(b)}const x=document.createElement('button');x.className='mini';x.textContent='×';x.title='Remove sentence';x.setAttribute('aria-label','Remove sentence');x.addEventListener('click',()=>removeAt(i));c.appendChild(x);el.appendChild(c)}
+el.addEventListener('dragstart',e=>handleDragStart(e,'answer',id));wireDrop(el,i);$('answerZone').appendChild(el)});
+wireDropOnce();
+$('clearBtn').disabled=locked||!state.draft.length;$('submitBtn').disabled=locked||state.draft.length!==4;$('submitBtn').hidden=locked;
+$('feedback').hidden=!locked;
+if(locked){const result=resultAt();$('feedback').className='feedback '+(result.correct?'good':'bad');$('feedbackTitle').textContent=result.correct?'Correct — the paragraph follows PEEL':'Not quite — compare the sentence roles';
+$('feedbackMessage').textContent=result.correct?'The paragraph moves from a clear argument to evidence, explains why that evidence matters, and ends by linking to the wider idea.':'Your order is saved as your first attempt. Review the intended order below and notice how the explanation differs from evidence.';
+$('solution').innerHTML=target.map(id=>'<div class="solutionItem"><strong>'+roles[id]+'</strong> — '+escapeHtml(q.blocks[id])+'</div>').join('');
+$('lesson').textContent=q.lesson;
+$('nextBtn').textContent=state.index===BANK.length-1?'See final results':'Next exercise';}
+}
+function wireDropOnce(){const zone=$('answerZone');zone.ondragover=e=>{if(isLocked())return;e.preventDefault();zone.classList.add('dragover')};zone.ondragleave=()=>zone.classList.remove('dragover');zone.ondrop=e=>{if(e.target.closest('.selected'))return;handleDrop(e,state.draft.length)};}
+function downloadRecord(rec){if(!rec)return;const blob=new Blob([JSON.stringify(rec,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='english-answer-builder-01-'+rec.id+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
+function showSummary(rec){show('summary');$('summaryCorrect').textContent=rec.correct+' / '+rec.total;$('summaryHints').textContent=String(rec.hints);$('summaryDone').textContent=String(rec.results.length)+' / '+rec.total;
+$('summaryAdvice').textContent=rec.correct===rec.total?'All paragraphs were sequenced correctly. Next, practise writing the same argument without blocks.':'Revisit the incorrect paragraphs, then practise explaining your own evidence without prewritten sentences. This score measures sequence recognition, not independent essay-writing.';
+$('summaryRows').innerHTML=rec.results.map((r,i)=>'<div class="solutionItem"><strong>'+(i+1)+'. '+escapeHtml(r.topic)+'</strong> — '+(r.correct?'Correct':'Incorrect')+(r.hintUsed?' · Hint used':'')+'</div>').join('')}
+function renderLanding(){show('landing');const active=safeGet(ACTIVE_KEY,null);$('resumeBtn').hidden=!(active&&Array.isArray(active.results)&&Number.isInteger(active.index));const h=history();mostRecent=h.length?h[h.length-1]:null;$('previousPanel').hidden=!mostRecent;if(mostRecent){$('previousSummary').textContent=mostRecent.student+' · '+mostRecent.correct+'/'+mostRecent.total+' correct · '+new Date(mostRecent.completed).toLocaleString()}let name='';try{name=localStorage.getItem('year8-status-student-v1')||''}catch(e){}if(!name&&mostRecent)name=mostRecent.student||'';$('studentName').value=name;}
+$('startBtn').addEventListener('click',enterPrimer);
+$('goWarmup').addEventListener('click',beginWarmup);
+$('introBack').addEventListener('click',renderLanding);
+$('warmupReview').addEventListener('click',()=>show('peelIntro'));
+$('warmupCheck').addEventListener('click',checkWarmup);
+$('warmupNext').addEventListener('click',nextWarmup);
+$('beginExercises').addEventListener('click',beginExercises);
+$('warmupRestart').addEventListener('click',beginWarmup);
+$('warmupToIntro').addEventListener('click',()=>show('peelIntro'));
+$('resumeBtn').addEventListener('click',resume);$('hintBtn').addEventListener('click',hint);$('clearBtn').addEventListener('click',clear);$('submitBtn').addEventListener('click',submit);$('nextBtn').addEventListener('click',next);$('downloadBtn').addEventListener('click',()=>downloadRecord(mostRecent));$('exportPrevious').addEventListener('click',()=>downloadRecord(mostRecent));$('restartBtn').addEventListener('click',()=>{renderLanding();$('studentName').focus()});$('studentName').addEventListener('input',()=>$('studentName').setCustomValidity(''));
+renderLanding();
+</script></body></html>
