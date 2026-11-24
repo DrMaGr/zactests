@@ -1,20 +1,33 @@
-ZAC'S KNOWLEDGE TRACKER — HUMANITIES .06 WRITING UPDATE
+ZAC'S KNOWLEDGE TRACKER — VERSION .06: MARKS, RADAR & HISTORY
 
-Upload these FOUR files to the ROOT of DrMaGr/zactests on GitHub (alongside index.html):
+UPLOAD THESE TWO FILES TO THE ROOT OF YOUR GITHUB REPOSITORY:
+  exam-06.html       (replace existing)
+  exam-06-app.js     (replace existing)
 
-1. index.html — REPLACE current homepage. Adds links to both Humanities writing and English PEEL Module 1.
-2. exam-06.html — REPLACE current .06 page. Adds a Humanities writing link beneath the Humanities card; preserves 30-question quiz, exam-06-bank.js and JSON history.
-3. humanities-argument-builder-06.html — NEW. Contains all 10 evaluative essay prompts provided (5 Japan, 5 Aztec), 2 PEEL warmups, guided/exam writing, autosaved drafts, review checklist and JSON export.
-4. english-answer-builder-01.html — ADD OR REPLACE. The previously built PEEL revision lesson + four warm-ups + eight English paragraph-building exercises. Included so the homepage link works.
+DO NOT REPLACE:
+  exam-06-bank.js    (existing 225 tutor-led questions)
+  index.html         (existing homepage and other versions)
+  versions .01-.05
 
-Do NOT remove or change exam-06-bank.js or any .01–.05 test files.
+HOW THE NEW MARKS WORK
+  Independent: first answer was correct with no hint (1 mark).
+  With help: correct after a hint and/or a retry (0 independent marks, but learning recorded).
+  Revisit: answer was revealed / skipped (0 independent marks).
+  These are revision-learning indicators, NOT exam grades.
 
-After committing:
-https://drmagr.github.io/zactests/humanities-argument-builder-06.html
-https://drmagr.github.io/zactests/english-answer-builder-01.html
+WHAT'S NEW
+  - Independent mark shown as x/total and percentage in each completed session.
+  - Radar chart by topic on each result and for each subject from the .06 homepage.
+  - Subject-wide radar uses latest completed response for each question.
+  - Unpractised topics show as unscored, not 0%.
+  - Historical trend displays only sessions with the same activity set for valid comparison.
+  - Topic counts, coverage, supported answers and revisit counts remain separate.
+  - Progress is still saved in browser localStorage under the same keys.
+  - Existing saved .06 sessions retain their original data and are recalculated for display.
 
-IMPORTANT: Humanities essays ARE NOT automatically scored. The site stores writing separately in localStorage: year8-humanities-writing-06-v1, not year8-knowledge-tracker-v1. The self-review checklist isn't a formal grade. A teacher/parent should evaluate quality of evidence, argument and historical accuracy.
+AFTER UPLOAD
+  Open https://drmagr.github.io/zactests/exam-06.html and hard-refresh (Ctrl + Shift + R).
+  Complete a small topic, select See what you learnt, inspect the radar.
+  Back on the subject page choose 'Radar & marks' for the combined topic profile.
 
-Drafts and results are stored in the current browser and device only. Use Download JSON results to back them up. Do not clear browser site data before exporting.
-
-The original Japan/Aztec essay prompt topics are used as supplied; the module's supporting notes were checked against the Smithsonian, US National Archives and Victorian Curriculum. No copyrighted source worksheets are reproduced.
+Do not unzip into an extra folder on GitHub: the two files belong in the repository's top level.

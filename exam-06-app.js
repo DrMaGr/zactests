@@ -46,7 +46,7 @@ const removeLocal=(k)=>{try{localStorage.removeItem(k)}catch{}};
 const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function getJSON(key,fallback){try{const data=JSON.parse(localStorage.getItem(key));return data??fallback}catch{return fallback}}
 function setJSON(key,v){try{localStorage.setItem(key,JSON.stringify(v));return true}catch(e){console.warn('Local progress save unavailable',e);return false}}
-function show(page){for(const id of ['homeView','introView','questionView','resultView'])$(id).hidden=id!==page;window.scrollTo({top:0,behavior:'instant'})}
+function show(page){for(const id of ['homeView','introView','questionView','resultView','dashboardView'])$(id).hidden=id!==page;window.scrollTo({top:0,behavior:'instant'})}
 const clean=s=>String(s??'').normalize('NFKC').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .replace(/[’‘`]/g,"'").replace(/[‐‑–—-]/g,' ').replace(/\b3rd\b/g,'third').replace(/\b2nd\b/g,'second').replace(/\b1st\b/g,'first')
   .replace(/[^\p{L}\p{N} '+Ωω]/gu,' ').replace(/\s+/g,' ').trim();
@@ -75,11 +75,114 @@ function saveDraft(){if(active)setJSON(HOME,active)}
 function clearNudge(){if(nudgeHandle){clearTimeout(nudgeHandle);nudgeHandle=null}}
 function nudgeLater(){clearNudge();const id=currentQ()?.id;nudgeHandle=setTimeout(()=>{if(currentQ()?.id!==id||solved||$('questionView').hidden)return;
  const box=$('gentleNudge');if(box){box.textContent='Take your time. There is no time limit. If you feel stuck, try “Show a hint” or look at the topic reminder.';box.hidden=false}},50000)}
-function displayHome(){show('homeView');clearNudge();const sums=Object.keys(SUBJECTS).map(sub=>{const cfg=SUBJECTS[sub],areas=[...new Set(BANK[sub].map(q=>q.area))];return `<article class="subject"><div class="subject-head"><span class="sq">${escapeHTML(sub.toUpperCase())}</span><strong>${escapeHTML(cfg.name)}</strong></div><div class="stats">${areas.length} topics · ${BANK[sub].length} guided questions</div><p>${escapeHTML(cfg.summary)}</p><button class="btn" data-subject="${sub}">Choose topic →</button></article>`}).join('');$('subjectCards').innerHTML=sums;
+// Reporting uses existing per-question mastery records and does not alter saved attempts.
+// First correct attempt with zero hints = one independent mark; later success = supported.
+function sessionMetrics(session){
+ const result={total:0,independent:0,supported:0,revisit:0,areas:{}};
+ if(!session||!Array.isArray(session.ids))return result;
+ const responses=session.responses||{};
+ for(const id of session.ids){
+  const q=getQ(id),r=responses[id];if(!q||!r?.completed)continue;
+  const a=result.areas[q.area]||(result.areas[q.area]={total:0,independent:0,supported:0,revisit:0});
+  const key=r.mastery==='independent'?'independent':r.mastery==='with-support'?'supported':'revisit';
+  result[key]++;result.total++;a[key]++;a.total++;
+ }
+ result.percent=result.total?Math.round(result.independent/result.total*100):null;
+ return result;
+}
+function sameStudent(a,b){return String(a??'').trim().toLocaleLowerCase()===String(b??'').trim().toLocaleLowerCase()}
+function subjectHistory(subject,student){return getJSON(HISTORY,[]).filter(s=>s?.subject===subject&&sameStudent(s.student,student)&&Array.isArray(s.ids)&&s.responses)
+ .sort((a,b)=>Date.parse(a.completed||a.created||0)-Date.parse(b.completed||b.created||0));}
+function sameQuestionSet(a,b){if(!Array.isArray(a?.ids)||!Array.isArray(b?.ids)||a.ids.length!==b.ids.length)return false;
+ return a.ids.slice().sort().join('\u001f')===b.ids.slice().sort().join('\u001f');}
+// A topic profile uses the latest COMPLETED attempt for each activity in this browser.
+// Unpractised activities are missing observations, NOT incorrect answers.
+function latestTopicProfile(subject,student){
+ const prior=subjectHistory(subject,student),latest=new Map();
+ for(const session of prior)for(const id of session.ids){const q=getQ(id),r=session.responses[id];if(q&&r?.completed)latest.set(id,r)}
+ const areas={};for(const q of BANK[subject]||[]){
+  const a=areas[q.area]||(areas[q.area]={total:0,attempted:0,independent:0,supported:0,revisit:0});a.total++;
+  const r=latest.get(q.id);if(!r)continue;
+  a.attempted++;a[r.mastery==='independent'?'independent':r.mastery==='with-support'?'supported':'revisit']++;
+ }
+ return areas;
+}
+function topicPercent(a){return a?.attempted?Math.round(a.independent/a.attempted*100):null;}
+function radarMarkup(title,profile,denominatorKey='attempted'){
+ const areas=Object.keys(profile),n=areas.length;
+ if(!n)return '<p class="muted">No topic data yet.</p>';
+ const size=850,cx=425,cy=256,r=147,labR=207;
+ const at=(i,rad)=>{const theta=-Math.PI/2+i*2*Math.PI/n;return [cx+rad*Math.cos(theta),cy+rad*Math.sin(theta)]};
+ let parts=[];
+ for(const tick of [25,50,75,100]){
+  const pts=areas.map((_,i)=>at(i,r*tick/100).map(v=>v.toFixed(1)).join(',')).join(' ');
+  parts.push(`<polygon points="${pts}" fill="none" stroke="#dce6f0" stroke-width="1.2"/>`);
+  parts.push(`<text x="${cx+5}" y="${(cy-r*tick/100-5).toFixed(1)}" font-size="11" fill="#62758d">${tick}%</text>`);
+ }
+ const observations=areas.map((area,i)=>{const a=profile[area],count=a?.[denominatorKey]||0;
+  const p=count?Math.round(a.independent/count*100):null;
+  return {i,area,point:p===null?null:at(i,r*p/100),pct:p,count};});
+ observations.forEach(o=>{
+  const end=at(o.i,r);parts.push(`<line x1="${cx}" y1="${cy}" x2="${end[0].toFixed(1)}" y2="${end[1].toFixed(1)}" stroke="#e3eaf2" stroke-width="1"/>`);
+ });
+ const complete=observations.every(o=>o.pct!==null);
+ if(complete){const pts=observations.map(o=>o.point.map(v=>v.toFixed(1)).join(',')).join(' ');
+  parts.push(`<polygon points="${pts}" fill="#2f83c0" fill-opacity=".16" stroke="#2675ae" stroke-width="2.7" stroke-linejoin="round"/>`);
+ }else for(let i=0;i<n;i++){const a=observations[i],b=observations[(i+1)%n];if(a.point&&b.point){parts.push(`<line x1="${a.point[0].toFixed(1)}" y1="${a.point[1].toFixed(1)}" x2="${b.point[0].toFixed(1)}" y2="${b.point[1].toFixed(1)}" stroke="#2675ae" stroke-width="2.7"/>`);}}
+ for(const o of observations){
+  if(o.point)parts.push(`<circle cx="${o.point[0].toFixed(1)}" cy="${o.point[1].toFixed(1)}" r="5.2" fill="#2475ac" stroke="white" stroke-width="1.7"><title>${escapeHTML(o.area)}: ${o.pct}% independent (${o.count} attempted)</title></circle>`);
+  const [x,y]=at(o.i,labR),cos=Math.cos(-Math.PI/2+o.i*2*Math.PI/n),anchor=cos>.2?'start':cos<-.2?'end':'middle';
+  const words=o.area.split(/\s+/),chunks=[];let chunk='';for(const word of words){if((chunk+' '+word).trim().length>20&&chunk){chunks.push(chunk);chunk=word}else chunk+=(chunk?' ':'')+word}if(chunk)chunks.push(chunk);
+  const start=y-(chunks.length-1)*9;
+  parts.push(`<text x="${x.toFixed(1)}" y="${start.toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="#244562">${chunks.map((txt,j)=>`<tspan x="${x.toFixed(1)}" dy="${j?'16':'0'}">${escapeHTML(txt)}</tspan>`).join('')}<tspan x="${x.toFixed(1)}" dy="16" fill="${o.pct===null?'#8795a4':'#2475ac'}" font-size="11">${o.pct===null?'not practised':o.pct+'%'}</tspan></text>`);
+ }
+ const missed=observations.filter(o=>o.pct===null).length;
+ return `<div class="radar-section"><h3>${escapeHTML(title)}</h3><svg class="radar-svg" role="img" aria-label="Topic radar chart of first-attempt independent understanding; ${missed} topics not yet attempted" viewBox="0 0 ${size} 525" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg><p class="radar-note">Each plotted value is the percentage solved correctly on the first attempt without hints, among <strong>activities attempted</strong> in that topic. ${missed?missed+' unpractised topic(s) remain unscored and are not treated as zero. ':''}See the table below for question counts and assisted learning.</p></div>`;
+}
+function stackedBar(a){const total=a.total||a.attempted||0;if(!total)return '—';
+ return `<div class="topic-meter" role="img" aria-label="${a.independent} independent, ${a.supported} with help, ${a.revisit} revisit"><span class="independent" style="width:${(a.independent/total*100).toFixed(1)}%"></span><span class="supported" style="width:${(a.supported/total*100).toFixed(1)}%"></span><span class="revisit" style="width:${(a.revisit/total*100).toFixed(1)}%"></span></div>`;}
+function topicTable(profile,mode){const isCumulative=mode==='cumulative';
+ return `<div class="history"><table><thead><tr><th>Topic</th><th>Independent mark</th><th>With help</th><th>Revisit</th>${isCumulative?'<th>Coverage</th>':''}<th>Progress</th></tr></thead><tbody>${Object.entries(profile).map(([area,a])=>{
+  const denominator=isCumulative?a.attempted:a.total;
+  return `<tr><td>${escapeHTML(area)}</td><td>${denominator?`${a.independent}/${denominator} (${Math.round(a.independent/denominator*100)}%)`:'Not practised'}</td><td>${a.supported}</td><td>${a.revisit}</td>${isCumulative?`<td>${a.attempted}/${a.total}</td>`:''}<td>${stackedBar({...a,total:denominator})}</td></tr>`
+ }).join('')}</tbody></table></div><div class="topic-legend"><span><i class="legend-dot" style="background:#267fb2"></i>Independent</span><span><i class="legend-dot" style="background:#b5a06c"></i>With help</span><span><i class="legend-dot" style="background:#cc8181"></i>Revisit</span></div>`;
+}
+function trendMarkup(session){
+ const history=subjectHistory(session.subject,session.student).filter(s=>sameQuestionSet(s,session)).slice(-10);
+ if(history.length<2)return `<div class="trend-section"><h3>Progress across comparable sessions</h3><p class="trend-note">Finish these same activities in another revision session to compare independent marks fairly. Different topic sets are not placed on the same trend line.</p></div>`;
+ const points=history.map((s,i)=>({session:s,metrics:sessionMetrics(s),index:i+1}));
+ const w=810,h=280,left=54,right=32,top=30,bottom=62;
+ const x=i=>left+(points.length===1?0:i/(points.length-1))*(w-left-right),y=v=>h-bottom-(v/100)*(h-top-bottom);
+ let svg=['<svg class="trend-svg" role="img" aria-label="Historical trend of first-attempt marks on an identical set of activities" viewBox="0 0 810 280" xmlns="http://www.w3.org/2000/svg">'];
+ for(const t of [0,25,50,75,100])svg.push(`<line x1="${left}" y1="${y(t)}" x2="${w-right}" y2="${y(t)}" stroke="#dce6ef"/><text x="${left-10}" y="${y(t)+4}" text-anchor="end" font-size="12" fill="#556b84">${t}%</text>`);
+ const line=points.map((p,i)=>`${x(i).toFixed(1)},${y(p.metrics.percent??0).toFixed(1)}`).join(' ');
+ svg.push(`<polyline points="${line}" stroke="#2578ae" stroke-width="3" fill="none" stroke-linejoin="round"/>`);
+ points.forEach((p,i)=>{const cx=x(i),cy=y(p.metrics.percent??0);svg.push(`<circle cx="${cx}" cy="${cy}" r="5.5" fill="#2279b5" stroke="white" stroke-width="1.8"><title>${escapeHTML(new Date(p.session.completed).toLocaleString())}: ${p.metrics.independent}/${p.metrics.total} independent</title></circle><text x="${cx}" y="${h-bottom+21}" text-anchor="middle" font-size="12" fill="#586b82">#${i+1}</text><text x="${cx}" y="${Math.max(cy-11,16)}" text-anchor="middle" font-size="11" font-weight="700" fill="#205c90">${p.metrics.percent??0}%</text>`)});
+ svg.push('</svg>');
+ return `<div class="trend-section"><h3>Progress across comparable sessions</h3>${svg.join('')}<p class="trend-note">Last ${points.length} completed sessions by ${escapeHTML(session.student)} answering the <strong>same ${session.ids.length} activities</strong>. The trend reports independent first-try marks; helped responses remain recorded separately. Practice attempts are not formal exams.</p></div>`;
+}
+function renderDashboard(subject,student){
+ show('dashboardView');const history=subjectHistory(subject,student),profile=latestTopicProfile(subject,student);
+ const all=Object.values(profile),attempted=all.reduce((s,a)=>s+a.attempted,0),independent=all.reduce((s,a)=>s+a.independent,0),helped=all.reduce((s,a)=>s+a.supported,0),revisit=all.reduce((s,a)=>s+a.revisit,0),available=all.reduce((s,a)=>s+a.total,0);
+ $('dashboardTitle').textContent=(SUBJECTS[subject]?.name||subject)+' — topic radar';
+ $('dashboardMeta').textContent=`${student} · latest completed response to each activity · ${history.length} finished session(s)`;
+ $('dashboardStats').innerHTML=`<div class="mark-summary"><div class="mark-tile"><strong>${independent}/${attempted||0}</strong><span>Independent marks across practised activities${attempted?' · '+Math.round(independent/attempted*100)+'%':''}</span></div><div class="mark-tile"><strong>${helped}</strong><span>Activities understood with help</span></div><div class="mark-tile"><strong>${attempted}/${available}</strong><span>Different activities covered</span></div></div><div class="section-notice">The radar uses the <strong>latest completed attempt per activity</strong>, not the best-ever result. A topic with no attempts is left unscored. Repeat an activity without hints to demonstrate independent understanding.</div>`;
+ $('dashboardRadar').innerHTML=radarMarkup('Independent understanding by topic',profile,'attempted');
+ $('dashboardTopics').innerHTML=`<h3>Topic marks, assistance and coverage</h3>${topicTable(profile,'cumulative')}`;
+ $('dashboardRecent').innerHTML=history.length?`<h3>Recent guided sessions</h3><div class="history"><table><thead><tr><th>Date</th><th>Topic</th><th>Independent mark</th><th>With help</th><th>Revisit</th></tr></thead><tbody>${history.slice(-10).reverse().map(s=>{const m=sessionMetrics(s);return `<tr><td>${escapeHTML(new Date(s.completed).toLocaleDateString())}</td><td>${escapeHTML(s.topic==='all'?'All topics':s.topic)}</td><td>${m.independent}/${m.total}${m.percent===null?'':' ('+m.percent+'%)'}</td><td>${m.supported}</td><td>${m.revisit}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="muted">No completed sessions for this subject yet. Study one topic to begin building a radar profile.</p>';
+ $('dashboardHome').onclick=displayHome;
+ $('dashboardExport').onclick=()=>download(`zac06-${subject}-progress.json`,{schema:'zac06-topic-profile-v1',student,subject,generated:new Date().toISOString(),profile,sessions:history,definitions:{independent:'First correct attempt, zero hints',supported:'Correct following hints or retry',revisit:'Answer revealed or skipped'}});
+}
+
+function displayHome(){show('homeView');clearNudge();const sums=Object.keys(SUBJECTS).map(sub=>{const cfg=SUBJECTS[sub],areas=[...new Set(BANK[sub].map(q=>q.area))];return `<article class="subject"><div class="subject-head"><span class="sq">${escapeHTML(sub.toUpperCase())}</span><strong>${escapeHTML(cfg.name)}</strong></div><div class="stats">${areas.length} topics · ${BANK[sub].length} guided questions</div><p>${escapeHTML(cfg.summary)}</p><div class="actions"><button class="btn" data-subject="${sub}">Choose topic →</button><button class="btn alt" data-radar="${sub}">Radar &amp; marks</button></div></article>`}).join('');$('subjectCards').innerHTML=sums;
  $('subjectCards').querySelectorAll('[data-subject]').forEach(btn=>btn.onclick=()=>openSubject(btn.dataset.subject));
+ $('subjectCards').querySelectorAll('[data-radar]').forEach(btn=>btn.onclick=()=>{
+ const subject=btn.dataset.radar,all=getJSON(HISTORY,[]).filter(h=>h.subject===subject),saved=getLocal('zac-v06-student')||'Zac';
+ const name=all.some(h=>sameStudent(h.student,saved))?saved:(all.at(-1)?.student||saved);renderDashboard(subject,name);
+ });
  const draft=getJSON(HOME,null);const resume=$('resumePanel');if(draft&&Array.isArray(draft.ids)&&draft.ids.length&&draft.cursor<draft.ids.length){resume.hidden=false;resume.innerHTML=`<h2>Continue where you left off</h2><p>${escapeHTML(SUBJECTS[draft.subject]?.name||draft.subject)} · ${escapeHTML(draft.topic==='all'?'All topics':draft.topic)} · Activity ${draft.cursor+1} of ${draft.ids.length}</p><div class="actions"><button class="btn" id="resumeNow">Resume guided revision</button><button class="btn alt" id="discardDraft">Discard unfinished session</button></div>`;
  $('resumeNow').onclick=()=>{active=draft;renderQuestion()};$('discardDraft').onclick=()=>{if(confirm('Discard this unfinished practice session? Completed history will stay saved.')){removeLocal(HOME);displayHome()}};}else{resume.hidden=true;resume.innerHTML=''}
- const history=getJSON(HISTORY,[]);$('history').innerHTML=history.length?`<div class="history"><table><thead><tr><th>Subject / topic</th><th>Completed</th><th>Practised</th><th>Open</th></tr></thead><tbody>${history.slice().reverse().map(h=>`<tr><td>${escapeHTML(SUBJECTS[h.subject]?.name||h.subject)}<div class="small muted">${escapeHTML(h.topic==='all'?'All topics':h.topic)}</div></td><td>${escapeHTML(new Date(h.completed).toLocaleDateString())}</td><td>${h.ids.length} questions</td><td><button class="btn alt" data-review="${escapeHTML(h.id)}">Review</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">No completed guided sessions in this browser yet.</p>';
+ const history=getJSON(HISTORY,[]);$('history').innerHTML=history.length?`<div class="history"><table><thead><tr><th>Subject / topic</th><th>Completed</th><th>Independent mark</th><th>With help</th><th>Revisit</th><th>Open</th></tr></thead><tbody>${history.slice().reverse().map(h=>`<tr><td>${escapeHTML(SUBJECTS[h.subject]?.name||h.subject)}<div class="small muted">${escapeHTML(h.topic==='all'?'All topics':h.topic)}</div></td><td>${escapeHTML(new Date(h.completed).toLocaleDateString())}</td><td>${sessionMetrics(h).independent}/${sessionMetrics(h).total} (${sessionMetrics(h).percent??0}%)</td><td>${sessionMetrics(h).supported}</td><td>${sessionMetrics(h).revisit}</td><td><button class="btn alt" data-review="${escapeHTML(h.id)}">Review</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">No completed guided sessions in this browser yet.</p>';
  $('history').querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>{const h=history.find(x=>x.id===b.dataset.review);if(h)renderResult(h)});
  $('downloadAllBtn').onclick=()=>download('zac-version-06-guided-revision-history.json',{schema:'zac06-guided-history-v1',sessions:history});
 }
@@ -170,8 +273,12 @@ function renderResult(session){reviewRecord=session;show('resultView');const res
  const stats={independent:0,'with-support':0,revisit:0};for(const {rec} of resultEntries){if(stats[rec.mastery]!==undefined)stats[rec.mastery]++}
  $('resultTitle').textContent=`${SUBJECTS[session.subject]?.name||session.subject} — what you practised`;
  $('resultMeta').textContent=`${session.student} · ${session.topic==='all'?'All topics':session.topic} · ${new Date(session.completed).toLocaleString()}`;
- $('resultScore').textContent=`${resultEntries.length} activities completed`;
+ const summary=sessionMetrics(session);
+ $('resultScore').textContent=`Independent mark: ${summary.independent}/${summary.total} (${summary.percent??0}%)`;
  const areas=[...new Set(resultEntries.map(x=>x.q.area))];$('resultAreas').innerHTML=`<div class="grid">${[['independent','Understood independently'],['with-support','Worked out with help'],['revisit','Revisit later']].map(([k,name])=>`<div class="statcard"><strong>${stats[k]}</strong><div>${name}</div></div>`).join('')}</div><h3 style="margin-top:22px">Topic review</h3><div class="history"><table><thead><tr><th>Topic</th><th>Independent</th><th>With help</th><th>Revisit</th></tr></thead><tbody>${areas.map(area=>{const items=resultEntries.filter(r=>r.q.area===area);return `<tr><td>${escapeHTML(area)}</td><td>${items.filter(x=>x.rec.mastery==='independent').length}</td><td>${items.filter(x=>x.rec.mastery==='with-support').length}</td><td>${items.filter(x=>x.rec.mastery==='revisit').length}</td></tr>`}).join('')}</tbody></table></div>`;
+ const sessionProfile=summary.areas;
+ $('resultRadar').innerHTML=radarMarkup('This session: independent marks by topic',sessionProfile,'total');
+ $('resultTrend').innerHTML=trendMarkup(session);
  $('resultReview').innerHTML=resultEntries.map(({q,rec},i)=>`<div class="review"><div class="stepnum">${i+1} · ${escapeHTML(q.area)}</div><strong>${escapeHTML(q.q)}</strong><p class="${rec.mastery==='revisit'?'wrongtxt':'correcttxt'}">${rec.mastery==='independent'?'Understood independently':rec.mastery==='with-support'?'Learnt with support':'Revisit this idea'}</p><p class="small">Your final attempt: ${escapeHTML(responseText(q,rec.response??rec.lastTried))}</p><p><strong>Model:</strong> ${escapeHTML(expected(q))}</p><p class="small muted">${escapeHTML(q.explain)}</p></div>`).join('');
  $('resultHome').onclick=displayHome;$('exportResult').onclick=()=>download('zac06-'+session.subject+'-'+session.id+'.json',{schema:'zac06-guided-session-v1',session});
  let weak=resultEntries.filter(({rec})=>rec.mastery!=='independent'||rec.confidence==='not'||rec.confidence==='nearly').map(({q})=>q.id);
@@ -201,5 +308,5 @@ function makeDiagram(kind){
 }
 $('introBack').onclick=displayHome;$('startBtn').onclick=start;$('leaveBtn').onclick=()=>{saveDraft();displayHome()};
 if(Object.keys(BANK).length===5&&Object.values(BANK).every(a=>a.length)){displayHome()}else{$('subjectCards').textContent='Question bank missing. Upload exam-06-bank.js beside exam-06.html and exam-06-app.js.'}
-window.ZAC06_TEST={clean,matchShort,isCorrect,expected,subjectCounts:Object.fromEntries(Object.entries(BANK).map(([k,v])=>[k,v.length]))};
+window.ZAC06_TEST={clean,matchShort,isCorrect,expected,sessionMetrics,latestTopicProfile,radarMarkup,trendMarkup,sameQuestionSet,subjectCounts:Object.fromEntries(Object.entries(BANK).map(([k,v])=>[k,v.length]))};
 })();
