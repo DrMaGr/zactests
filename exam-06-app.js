@@ -71,6 +71,37 @@ let selectedSubject='english',selectedTopic='all',active=null,reviewRecord=null,
 function idsFor(subject,topic){return BANK[subject].filter(q=>topic==='all'||q.area===topic).map(q=>q.id)}
 function getQ(id){for(const [subject,qs] of Object.entries(BANK)){const q=qs.find(item=>item.id===id);if(q)return q}return null}
 function currentQ(){return active&&getQ(active.ids[active.cursor])}
+// The question bank stores ORIGINAL option indices. Only the displayed order
+// is shuffled. Saved answers, marking and historical records keep those indices.
+// The correct option is spread as evenly as possible over A/B/C/D in each
+// practice session, including sessions containing just one topic.
+function stableHash(value){
+ let h=2166136261;
+ for(const ch of String(value)){h=Math.imul(h^ch.charCodeAt(0),16777619)>>>0;}
+ return h||0x811c9dc5;
+}
+function seededShuffle(items,seed){
+ let x=seed>>>0;
+ for(let i=items.length-1;i>0;i--){
+  x^=x<<13; x^=x>>>17; x^=x<<5;
+  const j=(x>>>0)%(i+1);
+  [items[i],items[j]]=[items[j],items[i]];
+ }
+ return items;
+}
+function mcDisplayOrder(q){
+ const n=q.options.length;
+ const questions=(active?.ids||[]).map(getQ).filter(item=>item?.type==='mc'&&item.options?.length===n);
+ const index=questions.findIndex(item=>item.id===q.id);
+ // Balance the correct letter, then shuffle the locations of its distractors.
+ // The session ID makes the sequence reproducible after refresh/resume, but
+ // different on later attempts. No changes to the question-bank answer key.
+ const slots=seededShuffle(Array.from({length:questions.length},(_,i)=>i%n),stableHash(String(active?.id)+'|'+n+'|correct-slots'));
+ const answerAt=slots[Math.max(0,index)]??0;
+ const others=seededShuffle(q.options.map((_,i)=>i).filter(i=>i!==q.answer),stableHash(String(active?.id)+'|'+q.id+'|alternatives'));
+ others.splice(answerAt,0,q.answer);
+ return others;
+}
 function saveDraft(){if(active)setJSON(HOME,active)}
 function clearNudge(){if(nudgeHandle){clearTimeout(nudgeHandle);nudgeHandle=null}}
 function nudgeLater(){clearNudge();const id=currentQ()?.id;nudgeHandle=setTimeout(()=>{if(currentQ()?.id!==id||solved||$('questionView').hidden)return;
@@ -91,6 +122,35 @@ function sessionMetrics(session){
  return result;
 }
 function sameStudent(a,b){return String(a??'').trim().toLocaleLowerCase()===String(b??'').trim().toLocaleLowerCase()}
+// One-time, narrowly scoped correction for the pre-shuffle French .06 result.
+// Previously, every French multiple-choice answer was displayed in position A.
+// This removes only Zac's completed 49/50 guided French full-subject attempt
+// (or a unique 49/50 match when the student field was not set). Every other
+// result remains in localStorage, including .01-.05 and other subjects.
+const FRENCH_RESET_MIGRATION='zac-v06-french-49-reset-before-choice-fix-v1';
+let frenchResetNotice='';
+function resetZacFrench49Once(){
+ if(getLocal(FRENCH_RESET_MIGRATION)==='done')return false;
+ const history=getJSON(HISTORY,[]);
+ if(!Array.isArray(history))return false;
+ const eligible=history.map((s,index)=>({s,index})).filter(({s})=>{
+  if(!s||s.subject!=='french'||s.optionOrderRevision>=2||s.version!=='guided.06')return false;
+  if(!Array.isArray(s.ids)||s.ids.length!==(BANK.french||[]).length||s.ids.length!==50)return false;
+  const m=sessionMetrics(s);
+  return m.total===50&&m.independent===49;
+ });
+ const named=eligible.filter(({s})=>/\bzac(?:h|hary)?\b/i.test(String(s.student||'')));
+ const matches=named.length?named:eligible.length===1?eligible:[];
+ // Exactly one match is selected, to protect other students sharing a browser.
+ const found=matches.length?matches.slice().sort((a,b)=>String(a.s.completed||'').localeCompare(String(b.s.completed||''))).at(-1):null;
+ if(found){
+  const kept=history.filter((_,index)=>index!==found.index);
+  if(!setJSON(HISTORY,kept))return false;
+  frenchResetNotice='Zac’s earlier French .06 result (49/50) has been reset because the old answer choices were predictable. Other subjects and earlier versions are unchanged.';
+ }
+ try{localStorage.setItem(FRENCH_RESET_MIGRATION,'done')}catch(e){console.warn('Unable to save one-time French reset marker',e)}
+ return !!found;
+}
 function subjectHistory(subject,student){return getJSON(HISTORY,[]).filter(s=>s?.subject===subject&&sameStudent(s.student,student)&&Array.isArray(s.ids)&&s.responses)
  .sort((a,b)=>Date.parse(a.completed||a.created||0)-Date.parse(b.completed||b.created||0));}
 function sameQuestionSet(a,b){if(!Array.isArray(a?.ids)||!Array.isArray(b?.ids)||a.ids.length!==b.ids.length)return false;
@@ -183,6 +243,7 @@ function displayHome(){show('homeView');clearNudge();const sums=Object.keys(SUBJ
  const draft=getJSON(HOME,null);const resume=$('resumePanel');if(draft&&Array.isArray(draft.ids)&&draft.ids.length&&draft.cursor<draft.ids.length){resume.hidden=false;resume.innerHTML=`<h2>Continue where you left off</h2><p>${escapeHTML(SUBJECTS[draft.subject]?.name||draft.subject)} · ${escapeHTML(draft.topic==='all'?'All topics':draft.topic)} · Activity ${draft.cursor+1} of ${draft.ids.length}</p><div class="actions"><button class="btn" id="resumeNow">Resume guided revision</button><button class="btn alt" id="discardDraft">Discard unfinished session</button></div>`;
  $('resumeNow').onclick=()=>{active=draft;renderQuestion()};$('discardDraft').onclick=()=>{if(confirm('Discard this unfinished practice session? Completed history will stay saved.')){removeLocal(HOME);displayHome()}};}else{resume.hidden=true;resume.innerHTML=''}
  const history=getJSON(HISTORY,[]);$('history').innerHTML=history.length?`<div class="history"><table><thead><tr><th>Subject / topic</th><th>Completed</th><th>Independent mark</th><th>With help</th><th>Revisit</th><th>Open</th></tr></thead><tbody>${history.slice().reverse().map(h=>`<tr><td>${escapeHTML(SUBJECTS[h.subject]?.name||h.subject)}<div class="small muted">${escapeHTML(h.topic==='all'?'All topics':h.topic)}</div></td><td>${escapeHTML(new Date(h.completed).toLocaleDateString())}</td><td>${sessionMetrics(h).independent}/${sessionMetrics(h).total} (${sessionMetrics(h).percent??0}%)</td><td>${sessionMetrics(h).supported}</td><td>${sessionMetrics(h).revisit}</td><td><button class="btn alt" data-review="${escapeHTML(h.id)}">Review</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">No completed guided sessions in this browser yet.</p>';
+ if(frenchResetNotice){$('history').insertAdjacentHTML('afterbegin',`<div class="section-notice" role="status">${escapeHTML(frenchResetNotice)}</div>`);}
  $('history').querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>{const h=history.find(x=>x.id===b.dataset.review);if(h)renderResult(h)});
  $('downloadAllBtn').onclick=()=>download('zac-version-06-guided-revision-history.json',{schema:'zac06-guided-history-v1',sessions:history});
 }
@@ -194,7 +255,7 @@ function openSubject(s){if(!SUBJECTS[s])return;selectedSubject=s;selectedTopic='
  $('studentName').value=getLocal('zac-v06-student')||'Zac';show('introView');
 }
 function start(){const name=$('studentName').value.trim()||'Student';try{localStorage.setItem('zac-v06-student',name)}catch{}
- active={id:'v06-guided-'+Date.now()+'-'+Math.random().toString(16).slice(2,8),version:'guided.06',subject:selectedSubject,topic:selectedTopic,student:name,created:new Date().toISOString(),ids:idsFor(selectedSubject,selectedTopic),cursor:0,responses:{},studyMode:'tutor-led, untimed',schemaVersion:1};
+ active={id:'v06-guided-'+Date.now()+'-'+Math.random().toString(16).slice(2,8),version:'guided.06',subject:selectedSubject,topic:selectedTopic,student:name,created:new Date().toISOString(),ids:idsFor(selectedSubject,selectedTopic),cursor:0,responses:{},studyMode:'tutor-led, untimed',schemaVersion:1,optionOrderRevision:2};
  attempts=0;hintLevel=0;saveDraft();renderQuestion();}
 function renderQuestion(){if(!active)return displayHome();if(active.cursor>=active.ids.length)return finish();
  const q=currentQ();if(!q)return displayHome();show('questionView');solved=!!active.responses[q.id]?.completed;attempts=active.responses[q.id]?.attempts||0;hintLevel=active.responses[q.id]?.hints||0;chosen=null;placed=[];lastSubmitted='';
@@ -208,7 +269,8 @@ function renderQuestion(){if(!active)return displayHome();if(active.cursor>=acti
  $('hintBtn').hidden=false;$('hintBtn').textContent='Show a hint';$('checkBtn').disabled=true;
  const ctrl=$('answerControl');ctrl.innerHTML='';
  if(q.type==='mc'){
-   ctrl.innerHTML=q.options.map((option,i)=>`<button type="button" class="choice" data-choice="${i}" aria-pressed="false"><span class="letter">${'ABCD'[i]||i+1}.</span>${escapeHTML(option)}</button>`).join('');
+   const display=mcDisplayOrder(q);
+   ctrl.innerHTML=display.map((originalIndex,i)=>`<button type="button" class="choice" data-choice="${originalIndex}" aria-pressed="false"><span class="letter">${'ABCD'[i]||i+1}.</span>${escapeHTML(q.options[originalIndex])}</button>`).join('');
    ctrl.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{chosen=Number(b.dataset.choice);ctrl.querySelectorAll('[data-choice]').forEach(c=>{let on=c===b;c.classList.toggle('selected',on);c.setAttribute('aria-pressed',String(on))});updateCheck()});
  }else if(q.type==='blocks'){
    ctrl.innerHTML='<p class="muted small">Choose the blocks in the correct order. Tap a placed block to remove it.</p><div id="blockBank" class="bank"></div><p class="subheading">Your answer</p><div id="blockPlaced" class="placed"></div><button class="btn muted-btn" id="clearBlocks" type="button" style="margin-top:9px">Start order again</button>';
@@ -283,7 +345,7 @@ function renderResult(session){reviewRecord=session;show('resultView');const res
  $('resultHome').onclick=displayHome;$('exportResult').onclick=()=>download('zac06-'+session.subject+'-'+session.id+'.json',{schema:'zac06-guided-session-v1',session});
  let weak=resultEntries.filter(({rec})=>rec.mastery!=='independent'||rec.confidence==='not'||rec.confidence==='nearly').map(({q})=>q.id);
  const btn=$('retryWeak');if(weak.length){btn.hidden=false;btn.textContent=`Practise ${weak.length} activities again`;
- btn.onclick=()=>{active={id:'v06-review-'+Date.now(),version:'guided.06',subject:session.subject,topic:'Review of difficult questions',student:session.student,created:new Date().toISOString(),ids:weak,cursor:0,responses:{},studyMode:'tutor-led review',schemaVersion:1};saveDraft();renderQuestion()}}else{btn.hidden=true}
+ btn.onclick=()=>{active={id:'v06-review-'+Date.now(),version:'guided.06',subject:session.subject,topic:'Review of difficult questions',student:session.student,created:new Date().toISOString(),ids:weak,cursor:0,responses:{},studyMode:'tutor-led review',schemaVersion:1,optionOrderRevision:2};saveDraft();renderQuestion()}}else{btn.hidden=true}
 }
 function download(filename,obj){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function makeDiagram(kind){
@@ -307,6 +369,6 @@ function makeDiagram(kind){
  return '';
 }
 $('introBack').onclick=displayHome;$('startBtn').onclick=start;$('leaveBtn').onclick=()=>{saveDraft();displayHome()};
-if(Object.keys(BANK).length===5&&Object.values(BANK).every(a=>a.length)){displayHome()}else{$('subjectCards').textContent='Question bank missing. Upload exam-06-bank.js beside exam-06.html and exam-06-app.js.'}
-window.ZAC06_TEST={clean,matchShort,isCorrect,expected,sessionMetrics,latestTopicProfile,radarMarkup,trendMarkup,sameQuestionSet,subjectCounts:Object.fromEntries(Object.entries(BANK).map(([k,v])=>[k,v.length]))};
+if(Object.keys(BANK).length===5&&Object.values(BANK).every(a=>a.length)){resetZacFrench49Once();displayHome()}else{$('subjectCards').textContent='Question bank missing. Upload exam-06-bank.js beside exam-06.html and exam-06-app.js.'}
+window.ZAC06_TEST={clean,matchShort,isCorrect,expected,sessionMetrics,latestTopicProfile,radarMarkup,trendMarkup,sameQuestionSet,subjectCounts:Object.fromEntries(Object.entries(BANK).map(([k,v])=>[k,v.length])),mcDisplayOrder,resetZacFrench49Once};
 })();
